@@ -9,6 +9,8 @@ namespace Harbour.Models
         public string Endpoint { get; set; }
         public List<Container> Containers { get; set; }
 
+        public Service() { }
+
         public Service(string name, List<Container> containers)
         {
             Name = name;
