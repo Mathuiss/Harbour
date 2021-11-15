@@ -26,9 +26,10 @@ namespace Harbour.Services
         public void Apply(List<Service> services)
         {
             Console.WriteLine("Applying service configuration...");
+            Console.WriteLine(services.Count);
 
             var newContainers = new List<Container>();
-            services.ForEach(s => newContainers.AddRange(s.Containers));
+            services.ForEach(s => s.Containers.ForEach(c => newContainers.Add(c)));
 
             foreach (Container container in RunningContainers)
             {
@@ -47,7 +48,6 @@ namespace Harbour.Services
                     RunContainer(container);
                 }
             }
-
 
             Console.WriteLine("Success");
         }
@@ -93,6 +93,7 @@ namespace Harbour.Services
 
         private void RunContainer(Container container)
         {
+            Console.WriteLine("Building args");
             string args = "run -d";
 
             if (!string.IsNullOrEmpty(container.Name))
@@ -121,7 +122,7 @@ namespace Harbour.Services
                 }
             }
 
-            if (container.Ports != null)
+            if (container.EnvironmentVars != null)
             {
                 foreach (string envVar in container.EnvironmentVars)
                 {
@@ -131,21 +132,37 @@ namespace Harbour.Services
 
             args = string.Concat(args, $" {container.Image}");
 
-            Process.Start("docker", args);
+            Console.WriteLine("Starting container with args");
+            Console.WriteLine(args);
+
+            var startInfo = new ProcessStartInfo("docker", args);
+            startInfo.RedirectStandardOutput = true;
+            Process.Start(startInfo);
+
+            Console.WriteLine("Done");
         }
 
         private void RemoveContainer(string name)
         {
-            Process.Start("docker", $"rm -f {name}");
+            Console.WriteLine("Removing container");
+
+            var startInfo = new ProcessStartInfo("docker", $"rm -f {name}");
+            startInfo.RedirectStandardOutput = true;
+            Process.Start(startInfo);
+
+            Console.WriteLine("Done");
         }
 
         private List<Container> GetRunningConfig()
         {
             var containers = new List<Container>();
+            Console.WriteLine("Reading container IDs");
             List<string> containerIds = GetContainerIds();
 
             foreach (string containerId in containerIds)
             {
+                Console.WriteLine(containerId);
+                Console.WriteLine("Getting container info");
                 containers.Add(GetContainerInfo(containerId));
             }
 
@@ -156,7 +173,10 @@ namespace Harbour.Services
         {
             var containerIds = new List<string>();
 
-            using (var proc = Process.Start("docker", "ps -aq"))
+            var startInfo = new ProcessStartInfo("docker", "ps -aq");
+            startInfo.RedirectStandardOutput = true;
+
+            using (var proc = Process.Start(startInfo))
             {
                 using (var r = proc.StandardOutput)
                 {
@@ -172,33 +192,41 @@ namespace Harbour.Services
 
         private Container GetContainerInfo(string id)
         {
-            using (var proc = Process.Start("docker", $"inspect {id}"))
+            var startInfo = new ProcessStartInfo("docker", $"inspect {id}");
+            startInfo.RedirectStandardOutput = true;
+
+            using (var proc = Process.Start(startInfo))
             {
                 using (var reader = proc.StandardOutput)
                 {
+                    Console.WriteLine("Reading json");
                     string json = reader.ReadToEnd();
                     JObject info = JObject.Parse(json);
 
                     // Get name
                     string name = (string)info[0]["Name"];
+                    Console.WriteLine(name);
 
                     if (name.StartsWith('/'))
                         name = name.Remove(0); // Strip beginning / from name
 
                     // Get image
                     string image = (string)info[0]["Config"]["Image"];
+                    Console.WriteLine(image);
 
                     // Get restart policy
                     string restart = (string)info[0]["HostConfig"]["RestartPolicy"]["Name"];
+                    Console.WriteLine(restart);
 
                     // Get ports
                     var ports = new List<string>();
                     JToken portinfo = info[0]["HostConfig"]["PortBindings"];
                     foreach (JProperty prop in portinfo)
                     {
-                        string containerPort = prop.Name.Split('/')[0];
                         string hostPort = (string)info[0]["HostConfig"]["PortBindings"][prop.Name]["HostPort"];
+                        string containerPort = prop.Name.Split('/')[0];
                         ports.Add($"{hostPort}:{containerPort}");
+                        Console.WriteLine(containerPort);
                     }
 
                     // Get volumes
@@ -206,6 +234,7 @@ namespace Harbour.Services
                     var volumes = new List<string>();
                     foreach (string vol in binds.Values())
                     {
+                        Console.WriteLine(vol);
                         volumes.Add(vol);
                     }
 
@@ -214,6 +243,7 @@ namespace Harbour.Services
                     var environmentVars = new List<string>();
                     foreach (string var in envVars.Values())
                     {
+                        Console.WriteLine(var);
                         if (!var.Contains("PATH"))
                         {
                             environmentVars.Add(var);

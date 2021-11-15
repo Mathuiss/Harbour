@@ -24,16 +24,18 @@
         "name": "imisdemo.imishandbook",
         "domain": "imisdemo.imisfood.com",
         "endpoint": "/handbook",
-        "container": {
-            "name": "imishandbook",
-            "image": "gitlab.qassurance.local:5000/imishandbook-dist",
-            "restart": "unless-stopped",
-            "ports": [
-                "4000:80"
-            ],
-            "volumes": [
-                "/home/imisaudit/ApplicationData/:/app/ApplicationData"
-            ]
-        }
+        "containers": [
+            {
+                "name": "imishandbook",
+                "image": "gitlab.qassurance.local:5000/imishandbook-dist",
+                "restart": "unless-stopped",
+                "ports": [
+                    "4000:80"
+                ],
+                "volumes": [
+                    "/home/imisaudit/ApplicationData/:/app/ApplicationData"
+                ]
+            }
+        ]
     }
 ]

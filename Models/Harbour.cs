@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using Harbour.Services;
@@ -18,12 +19,16 @@ namespace Harbour.Models
 
         public void Run()
         {
+            Console.WriteLine("Running switch");
             switch (Cmd)
             {
                 case Cmd.Apply:
                     {
+                        Console.WriteLine("Deserializing file");
                         List<Service> services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(Arg));
+                        Console.WriteLine("Reading running config");
                         var containerService = new ContainerService();
+                        Console.WriteLine("Applying config");
                         containerService.Apply(services);
                     }
                     break;
