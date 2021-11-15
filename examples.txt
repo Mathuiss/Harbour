@@ -1,0 +1,4 @@
+harbour apply [/path/to/state.json]
+harbour add [/path/to/newService.json]
+harbour remove [service-name]
+harbour serve [/path/to/state/json]
