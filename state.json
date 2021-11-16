@@ -1,40 +1,35 @@
 [
     {
-        "name": "imisdemo.imisaudit",
-        "domain": "imisdemo.imisfood.com",
-        "endpoint": "/imisaudit",
-        "containers": [
+        "Name": "imisaudit",
+        "Domain": "imisdemo.imisfood.com",
+        "Endpoint": "/imisaudit",
+        "Containers": [
             {
-                "name": "imisdemo-imisaudit",
-                "image": "gitlab.qassurance.local:5000/imisaudit-dist",
-                "restart": "unless-stopped",
-                "ports": [
+                "Name": "imisaudit",
+                "Image": "gitlab.qassurance.local:5000/imisaudit-dist",
+                "Restart": null,
+                "Ports": [
                     "5000:80"
                 ],
-                "volumes": [
-                    "/home/imisaudit/ApplicationData/:/app/ApplicationData"
-                ],
-                "env": [
-                    "ASPNETCORE_URLS=http://0.0.0.0:80"
-                ]
+                "Volumes": [],
+                "Env": []
             }
         ]
     },
     {
-        "name": "imisdemo.imishandbook",
-        "domain": "imisdemo.imisfood.com",
-        "endpoint": "/handbook",
-        "containers": [
+        "Name": "imishandbook",
+        "Domain": "imisdemo.imisfood.com",
+        "Endpoint": "/handbook",
+        "Containers": [
             {
-                "name": "imishandbook",
-                "image": "gitlab.qassurance.local:5000/imishandbook-dist",
-                "restart": "unless-stopped",
-                "ports": [
-                    "4000:80"
+                "Name": "imishandbook",
+                "Image": "gitlab.qassurance.local:5000/imishandbook-dist",
+                "Restart": null,
+                "Ports": [
+                    "3000:80"
                 ],
-                "volumes": [
-                    "/home/imisaudit/ApplicationData/:/app/ApplicationData"
-                ]
+                "Volumes": [],
+                "Env": []
             }
         ]
     }

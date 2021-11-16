@@ -1,0 +1,14 @@
+[
+    {
+        "name": "imismenu",
+        "domain": "imisdemo.imisfood.com",
+        "endpoint": "/",
+        "containers": [
+            {
+                "name": "imismenu",
+                "image": "gitlab.qassurance.local:5000/imismenu-dist",
+                "restart": "unless-stopped"
+            }
+        ]
+    }
+]

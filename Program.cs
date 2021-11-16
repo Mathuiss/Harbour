@@ -18,11 +18,13 @@ namespace Harbour
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(GenerateHelp());
+                Environment.Exit(1);
             }
             catch (ArgumentException ex)
             {
                 Console.WriteLine(ex.Message);
                 Console.WriteLine(GenerateHelp());
+                Environment.Exit(1);
             }
 
             try
@@ -40,21 +42,26 @@ namespace Harbour
 
         static Models.Harbour Parse(string[] args)
         {
-            if (args.Length != 2)
+            if (args.Length > 2 && args.Length < 1)
             {
                 throw new ArgumentOutOfRangeException("Harbour takes 2 arguments: ");
             }
 
-            string cmd = args[0].ToLower();
-            string arg = args[1].ToLower();
             Cmd exec;
+            string cmd = args[0].ToLower();
+            string arg = string.Empty;
+
+            if (args.Length == 2)
+                arg = args[1].ToLower();
+
 
             switch (cmd)
             {
                 case "apply":
                     // File path
                     exec = Cmd.Apply;
-                    arg = ValidatePath(arg);
+                    if (!string.IsNullOrEmpty(arg))
+                        arg = ValidatePath(arg);
                     break;
                 case "add":
                     // File path
@@ -74,7 +81,8 @@ namespace Harbour
                     }
                     else
                     {
-                        arg = ValidatePath(arg);
+                        if (!string.IsNullOrEmpty(arg))
+                            arg = ValidatePath(arg);
                     }
 
                     break;
@@ -91,10 +99,10 @@ namespace Harbour
 harbour [cmd] [string: argument]
 
 Examples:
-harbour apply [/path/to/state.json]
+harbour apply [optional: /path/to/state.json]
 harbour add [/path/to/newService.json]
-harbour remove [service-name]
-harbour serve [/path/to/state/json]
+harbour remove [container-name]
+harbour serve [optional: /path/to/state/json]
 harbour serve stop";
 
             return help;

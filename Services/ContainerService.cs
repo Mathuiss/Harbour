@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
-using System.Threading.Tasks;
 using Harbour.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 namespace Harbour.Services
@@ -25,31 +24,36 @@ namespace Harbour.Services
         /// <param name="services"></param>
         public void Apply(List<Service> services)
         {
-            Console.WriteLine("Applying service configuration...");
-            Console.WriteLine(services.Count);
+            var applyContainers = new List<Container>();
+            services.ForEach(s => s.Containers.ForEach(c => applyContainers.Add(c)));
 
-            var newContainers = new List<Container>();
-            services.ForEach(s => s.Containers.ForEach(c => newContainers.Add(c)));
-
-            foreach (Container container in RunningContainers)
+            foreach (Container runningContainer in RunningContainers.GetRange(0, RunningContainers.Count))
             {
-                if (!newContainers.Contains(container))
+                if (!applyContainers.Contains(runningContainer))
                 {
-                    RemoveContainer(container.Name);
-                    RunningContainers.Remove(container);
+                    Process p = RemoveContainer(runningContainer.Name);
+                    p.WaitForExit();
+                    p.Close();
+                    RunningContainers.Remove(runningContainer);
                 }
             }
 
-            foreach (Container container in newContainers)
+            var processes = new List<Process>();
+
+            foreach (Container container in applyContainers)
             {
                 if (!RunningContainers.Contains(container))
                 {
                     // Container does not yet exist, so run
-                    RunContainer(container);
+                    processes.Add(RunContainer(container));
                 }
             }
 
-            Console.WriteLine("Success");
+            foreach (Process p in processes)
+            {
+                p.WaitForExit();
+                p.Close();
+            }
         }
 
         /// <summary>
@@ -59,41 +63,32 @@ namespace Harbour.Services
         /// <param name="services"></param>
         public void Add(List<Service> services)
         {
-            Console.WriteLine("Adding service configuration...");
+            var processes = new List<Process>();
 
             foreach (Service service in services)
             {
                 foreach (Container container in service.Containers)
                 {
-                    RunContainer(container);
+                    if (RunningContainers.Contains(container))
+                    {
+                        Console.WriteLine($"Container already exists and is ignored: {container.Name}");
+                    }
+                    else
+                    {
+                        processes.Add(RunContainer(container));
+                    }
                 }
             }
 
-            Console.WriteLine("Success");
-        }
-
-        /// <summary>
-        /// Removes a service from configuration.
-        /// If a service does not exist, does nothing.
-        /// </summary>
-        /// <param name="name"></param>
-        public void Remove(string name)
-        {
-            Console.WriteLine("Removing service configuration...");
-
-            if (!RunningContainers.Exists(c => c.Name == name))
+            foreach (Process p in processes)
             {
-                throw new ArgumentException($"Invalid argument. Container {name} does not exist.");
+                p.WaitForExit();
+                p.Close();
             }
-
-            RemoveContainer(name);
-
-            Console.WriteLine("Success");
         }
 
-        private void RunContainer(Container container)
+        private Process RunContainer(Container container)
         {
-            Console.WriteLine("Building args");
             string args = "run -d";
 
             if (!string.IsNullOrEmpty(container.Name))
@@ -122,9 +117,9 @@ namespace Harbour.Services
                 }
             }
 
-            if (container.EnvironmentVars != null)
+            if (container.Env != null)
             {
-                foreach (string envVar in container.EnvironmentVars)
+                foreach (string envVar in container.Env)
                 {
                     args = string.Concat(args, $" -e {envVar}");
                 }
@@ -132,37 +127,26 @@ namespace Harbour.Services
 
             args = string.Concat(args, $" {container.Image}");
 
-            Console.WriteLine("Starting container with args");
-            Console.WriteLine(args);
-
             var startInfo = new ProcessStartInfo("docker", args);
-            startInfo.RedirectStandardOutput = true;
-            Process.Start(startInfo);
-
-            Console.WriteLine("Done");
+            startInfo.RedirectStandardOutput = false;
+            return Process.Start(startInfo);
         }
 
-        private void RemoveContainer(string name)
+        private Process RemoveContainer(string name)
         {
-            Console.WriteLine("Removing container");
-
             var startInfo = new ProcessStartInfo("docker", $"rm -f {name}");
-            startInfo.RedirectStandardOutput = true;
-            Process.Start(startInfo);
+            startInfo.RedirectStandardOutput = false;
 
-            Console.WriteLine("Done");
+            return Process.Start(startInfo);
         }
 
         private List<Container> GetRunningConfig()
         {
             var containers = new List<Container>();
-            Console.WriteLine("Reading container IDs");
             List<string> containerIds = GetContainerIds();
 
             foreach (string containerId in containerIds)
             {
-                Console.WriteLine(containerId);
-                Console.WriteLine("Getting container info");
                 containers.Add(GetContainerInfo(containerId));
             }
 
@@ -199,54 +183,64 @@ namespace Harbour.Services
             {
                 using (var reader = proc.StandardOutput)
                 {
-                    Console.WriteLine("Reading json");
                     string json = reader.ReadToEnd();
-                    JObject info = JObject.Parse(json);
+                    JArray info = JArray.Parse(json);
 
                     // Get name
                     string name = (string)info[0]["Name"];
-                    Console.WriteLine(name);
 
                     if (name.StartsWith('/'))
-                        name = name.Remove(0); // Strip beginning / from name
+                        name = name.TrimStart('/'); // Strip beginning / from name
 
                     // Get image
                     string image = (string)info[0]["Config"]["Image"];
-                    Console.WriteLine(image);
 
                     // Get restart policy
                     string restart = (string)info[0]["HostConfig"]["RestartPolicy"]["Name"];
-                    Console.WriteLine(restart);
+
+                    if (restart.Equals("no"))
+                    {
+                        restart = null;
+                    }
 
                     // Get ports
                     var ports = new List<string>();
                     JToken portinfo = info[0]["HostConfig"]["PortBindings"];
-                    foreach (JProperty prop in portinfo)
+
+                    if (portinfo != null)
                     {
-                        string hostPort = (string)info[0]["HostConfig"]["PortBindings"][prop.Name]["HostPort"];
-                        string containerPort = prop.Name.Split('/')[0];
-                        ports.Add($"{hostPort}:{containerPort}");
-                        Console.WriteLine(containerPort);
+                        foreach (JProperty prop in portinfo)
+                        {
+                            string hostPort = (string)info[0]["HostConfig"]["PortBindings"][prop.Name][0]["HostPort"];
+                            string containerPort = prop.Name.Split('/')[0];
+                            ports.Add($"{hostPort}:{containerPort}");
+                        }
                     }
 
                     // Get volumes
-                    JArray binds = (JArray)info[0]["HostConfig"]["Binds"];
                     var volumes = new List<string>();
-                    foreach (string vol in binds.Values())
+                    JToken binds = info[0]["HostConfig"]["Binds"];
+
+                    if (binds != null)
                     {
-                        Console.WriteLine(vol);
-                        volumes.Add(vol);
+                        foreach (string vol in binds.Values())
+                        {
+                            volumes.Add(vol);
+                        }
                     }
 
                     // Get environment variables
-                    JArray envVars = (JArray)info[0]["Config"]["Env"];
                     var environmentVars = new List<string>();
-                    foreach (string var in envVars.Values())
+                    JToken envVars = info[0]["Config"]["Env"];
+
+                    if (envVars != null)
                     {
-                        Console.WriteLine(var);
-                        if (!var.Contains("PATH"))
+                        foreach (string var in envVars.Values())
                         {
-                            environmentVars.Add(var);
+                            if (!var.Contains("PATH"))
+                            {
+                                environmentVars.Add(var);
+                            }
                         }
                     }
 
@@ -257,7 +251,7 @@ namespace Harbour.Services
                         Restart = restart,
                         Ports = ports.ToArray(),
                         Volumes = volumes.ToArray(),
-                        EnvironmentVars = environmentVars.ToArray(),
+                        Env = environmentVars.ToArray(),
                     };
                 }
             }
