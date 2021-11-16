@@ -32,4 +32,4 @@ sudo harbour serve stop
 
 ### Behaviour
 
-Harbour updates the current-state.json each time changes are made. If a service is added or removed, these changes are visible in the ```current-state.json```. This means that users can edit the current-state.json file if small changes need to be made. Be careful, if harbour  unable to read it's ```current-state.json```, it will be unable to run. This is why you can supply a new ```state.json``` to test the configuration file, before any changes are made.
+Harbour updates the current-state.json each time changes are made. If a service is added or removed, these changes are visible in the ```current-state.json```. This means that users can edit the current-state.json file if small changes need to be made. Be careful, if harbour is unable to read it's ```current-state.json```, it will be unable to run. This is why you can supply a new ```state.json``` to test the configuration file, before any changes are made.
