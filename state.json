@@ -1,35 +1,19 @@
 [
     {
-        "Name": "imisaudit",
-        "Domain": "imisdemo.imisfood.com",
-        "Endpoint": "/imisaudit",
+        "Name": "demo",
+        "Domain": "demo.example.com",
+        "Endpoint": "/demo",
         "Containers": [
             {
-                "Name": "imisaudit",
-                "Image": "gitlab.qassurance.local:5000/imisaudit-dist",
-                "Restart": null,
+                "Name": "democontainer",
+                "Image": "hello-world",
                 "Ports": [
-                    "5000:80"
+                    "8080:80"
                 ],
                 "Volumes": [],
-                "Env": []
-            }
-        ]
-    },
-    {
-        "Name": "imishandbook",
-        "Domain": "imisdemo.imisfood.com",
-        "Endpoint": "/handbook",
-        "Containers": [
-            {
-                "Name": "imishandbook",
-                "Image": "gitlab.qassurance.local:5000/imishandbook-dist",
-                "Restart": null,
-                "Ports": [
-                    "3000:80"
-                ],
-                "Volumes": [],
-                "Env": []
+                "Env": [
+                    "KEY=value"
+                ]
             }
         ]
     }
