@@ -77,9 +77,18 @@ namespace Harbour.Models
                         else
                         {
                             // Start reverse proxy
-                            FileCheck();
-                            List<Service> services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(Arg));
-                            proxyService.Serve(services);
+                            if (string.IsNullOrEmpty(Arg))
+                            {
+                                // If no arguments are supplied
+                                FileCheck();
+                                Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(GetDefaultStatePath()));
+                            }
+                            else
+                            {
+                                Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(Arg));
+                            }
+
+                            proxyService.Serve(Services);
                         }
                     }
                     break;

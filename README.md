@@ -1,7 +1,7 @@
 # Harbour
 Simple deployment platform for dockerized applications
 
-Harbour manages your dockerized application. Harbour's only dependency is docker. To install docker visit [https://docs.docker.com/engine/install/](Docker install page).
+Harbour manages your dockerized application. Harbour's only dependency is docker. To install docker visit [Docker install page](https://docs.docker.com/engine/install/).
 
 ### Usage
 

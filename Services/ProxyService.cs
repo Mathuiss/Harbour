@@ -9,13 +9,13 @@ namespace Harbour.Services
         public void Serve(List<Service> services)
         {
             Console.WriteLine("Starting proxy service...");
-            Console.WriteLine("Success");
+            throw new NotImplementedException();
         }
 
         public void Stop()
         {
             Console.WriteLine("Stopping proxy service...");
-            Console.WriteLine("Success");
+            throw new NotImplementedException();
         }
     }
 }
