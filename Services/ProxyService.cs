@@ -87,7 +87,9 @@ namespace Harbour.Services
             .Run();
         }
 
-        // Find reverse proxy server process and kill it.
+        /// <summary>
+        /// Find reverse proxy server process and kill it.
+        /// </summary>
         public void Stop()
         {
             Process[] processes = Process.GetProcessesByName("harbour");
