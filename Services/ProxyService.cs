@@ -106,7 +106,6 @@ namespace Harbour.Services
             // Determine endpoint
             foreach (string key in _endpointMap.Keys)
             {
-                // if (http.Request.Path.ToString().StartsWith(key))
                 if (http.Request.Path.StartsWithSegments(new PathString(key)))
                 {
                     using (var proxyRequest = new HttpRequestMessage())
