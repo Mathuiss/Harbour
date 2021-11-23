@@ -1,0 +1,69 @@
+[
+  {
+    "Name": "imisaudit",
+    "Domain": "imisdemo.imisfood.com",
+    "Containers": [
+      {
+        "Name": "imisaudit",
+        "Image": "gitlab.qassurance.local:5000/imisaudit-dist",
+        "Endpoint": "/imisaudit",
+        "HttpPort": "5000",
+        "Restart": "unless-stopped",
+        "Ports": [
+          "0.0.0.0:5000:80"
+        ],
+        "Volumes": [
+          "/home/imisaudit/ApplicationData/:/app/ApplicationData"
+        ],
+        "Env": [
+          "ASPNETCORE_URLS=http://0.0.0.0:80"
+        ]
+      }
+    ]
+  },
+  {
+    "Name": "imisactionlist",
+    "Domain": "imisdemo.imisfood.com",
+    "Containers": [
+      {
+        "Name": "imisactionlist",
+        "Image": "gitlab.qassurance.local:5000/imisactionlist-dist",
+        "Endpoint": "/actionlist",
+        "HttpPort": "6001",
+        "Restart": "unless-stopped",
+        "Ports": [
+          "0.0.0.0:6001:80"
+        ],
+        "Volumes": [
+          "/home/imisactionlist/datastore:/var/lib/mysql"
+        ],
+        "Env": [
+          "MYSQL_HOST=localhost",
+          "MYSQL_DATABASE=ost_db",
+          "MYSQL_USER=imis",
+          "MYSQL_PASSWORD=iMIS2008!"
+        ]
+      }
+    ]
+  },
+  {
+    "Name": "imishandbook",
+    "Domain": "imisdemo.imisfood.com",
+    "Containers": [
+      {
+        "Name": "imishandbook",
+        "Image": "gitlab.qassurance.local:5000/imishandbook-dist",
+        "Endpoint": "/handbook",
+        "HttpPort": "4000",
+        "Restart": "unless-stopped",
+        "Ports": [
+          "0.0.0.0:4000:80"
+        ],
+        "Volumes": [
+          "/home/imishandbook/handbook:/var/www/html"
+        ],
+        "Env": []
+      }
+    ]
+  }
+]

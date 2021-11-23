@@ -28,6 +28,14 @@ sudo harbour serve state.json
 
 # Example of stopping HTTP server
 sudo harbour serve stop
+
+# Run server in the background
+sudo harbour serve -d
+sudo harbour serve --detached
+
+# Get help
+harbour -h
+harbour --help
 ```
 
 ### Behaviour

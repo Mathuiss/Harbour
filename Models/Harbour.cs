@@ -8,103 +8,87 @@ namespace Harbour.Models
 {
     public class Harbour
     {
-        public Cmd Cmd { get; set; }
-        public string Arg { get; set; }
         public List<Service> Services { get; set; }
 
-        public Harbour(Cmd cmd, string arg)
+        public Harbour()
         {
-            Cmd = cmd;
-            Arg = arg;
         }
 
-        public void Run()
+        public void Apply(string path)
         {
-            switch (Cmd)
+            FileCheck(path);
+            var containerService = new ContainerService();
+            containerService.Apply(Services);
+            File.WriteAllText(GetDefaultStatePath(), JsonConvert.SerializeObject(Services, Formatting.Indented));
+        }
+
+        public void Add(string path)
+        {
+            List<Service> toAdd = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(path));
+            var containerService = new ContainerService();
+            containerService.Add(toAdd);
+
+            foreach (Service service in toAdd)
             {
-                case Cmd.Apply:
-                    {
-                        FileCheck();
-                        var containerService = new ContainerService();
-                        containerService.Apply(Services);
-                        File.WriteAllText(GetDefaultStatePath(), JsonConvert.SerializeObject(Services, Formatting.Indented));
-                    }
-                    break;
-                case Cmd.Add:
-                    {
-                        List<Service> toAdd = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(Arg));
-                        var containerService = new ContainerService();
-                        containerService.Add(toAdd);
-
-                        // Add to default config
-                        Arg = null;
-                        FileCheck();
-
-                        foreach (Service service in toAdd)
-                        {
-                            if (!Services.Contains(service))
-                            {
-                                Services.Add(service);
-                            }
-                        }
-
-                        File.WriteAllText(GetDefaultStatePath(), JsonConvert.SerializeObject(Services, Formatting.Indented));
-                    }
-                    break;
-                case Cmd.Remove:
-                    {
-                        Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(GetDefaultStatePath()));
-
-                        if (Services.Exists(s => s.Name == Arg))
-                        {
-                            Services.Remove(Services.Find(s => s.Name == Arg));
-                        }
-
-                        var containerService = new ContainerService();
-                        containerService.Apply(Services);
-                        File.WriteAllText(GetDefaultStatePath(), JsonConvert.SerializeObject(Services, Formatting.Indented));
-                    }
-                    break;
-                case Cmd.Serve:
-                    {
-                        var proxyService = new ProxyService();
-
-                        if (Arg == "stop")
-                        {
-                            // Stop reverse proxy
-                            proxyService.Stop();
-                        }
-                        else
-                        {
-                            // Start reverse proxy
-                            if (string.IsNullOrEmpty(Arg))
-                            {
-                                // If no arguments are supplied
-                                FileCheck();
-                                Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(GetDefaultStatePath()));
-                            }
-                            else
-                            {
-                                Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(Arg));
-                            }
-
-                            proxyService.Serve(Services);
-                        }
-                    }
-                    break;
+                if (!Services.Contains(service))
+                {
+                    Services.Add(service);
+                }
             }
+
+            File.WriteAllText(GetDefaultStatePath(), JsonConvert.SerializeObject(Services, Formatting.Indented));
+        }
+
+        public void Remove(string serviceName)
+        {
+            Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(GetDefaultStatePath()));
+
+            if (Services.Exists(s => s.Name == serviceName))
+            {
+                Services.Remove(Services.Find(s => s.Name == serviceName));
+            }
+            else
+            {
+                throw new ArgumentException($"Service was not found in running configuration: {serviceName}");
+            }
+
+            var containerService = new ContainerService();
+            containerService.Apply(Services);
+            File.WriteAllText(GetDefaultStatePath(), JsonConvert.SerializeObject(Services, Formatting.Indented));
+        }
+
+        public void Serve(string path)
+        {
+            FileCheck(path);
+
+            var proxyService = new ProxyService(Services);
+            proxyService.StartServer();
+        }
+
+        public void ServeBackground(string path)
+        {
+            FileCheck(path);
+
+            var proxyService = new ProxyService(Services);
+            proxyService.StartServerBackground();
+        }
+
+        public void StopServe()
+        {
+            var proxyService = new ProxyService();
+            proxyService.Stop();
         }
 
         /// <summary>
         /// This check must be called before services are passed to a function.
         /// This check makes sure that there are always valid services.
         /// </summary>
-        private void FileCheck()
+        private void FileCheck(string path)
         {
             // If no argument
-            if (!string.IsNullOrEmpty(Arg))
+            if (!string.IsNullOrEmpty(path))
             {
-                Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(Arg));
+                Services = JsonConvert.DeserializeObject<List<Service>>(File.ReadAllText(path));
             }
             else
             {

@@ -10,6 +10,8 @@ namespace Harbour.Models
         public string Name { get; set; }
         [JsonProperty(Required = Required.Always)]
         public string Image { get; set; }
+        public string Endpoint { get; set; }
+        public string HttpPort { get; set; }
         public string Restart { get; set; }
         public string[] Ports { get; set; }
         public string[] Volumes { get; set; }

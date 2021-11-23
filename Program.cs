@@ -1,35 +1,62 @@
-﻿using System;
+﻿
+using System;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.IO;
-using Harbour.Models;
 
 namespace Harbour
 {
     class Program
     {
+        private static Models.Harbour _harbour;
+
         static void Main(string[] args)
         {
-            Models.Harbour harbour = null;
-
             try
             {
-                harbour = Parse(args);
-            }
-            catch (ArgumentOutOfRangeException ex)
-            {
-                Console.WriteLine(ex.Message);
-                Console.WriteLine(GenerateHelp());
-                Environment.Exit(1);
+                var apply = new Command("apply", "Apply either the running configuration or supply a new state.json file.")
+                {
+                    new Argument<string>("path", () => null, "Path to a new state.json file."),
+                };
+                apply.Handler = CommandHandler.Create<string>(HandleApply);
+
+                var add = new Command("add", "Add a new service to the running configuration.")
+                {
+                    new Argument<string>("path", "Path to a new state.json file.")
+                };
+                add.Handler = CommandHandler.Create<string>(HandleAdd);
+
+                var remove = new Command("remove", "Removes a service from the running configuration")
+                {
+                    new Argument<string>("serviceName", "The name of the service you want to remove.")
+                };
+                remove.Handler = CommandHandler.Create<string>(HandleRemove);
+
+                var serve = new Command("serve", "Starts web server/service router.")
+                {
+                    new Argument<string>("path", () => null, "Path to a new state.json file."),
+                    new Command("stop", "Stops the web server/service router")
+                    {
+                        Handler = CommandHandler.Create(StopServe)
+                    },
+                    new Option(new string[] { "--detached", "-d" }, "Add this option to start the web server/service router in the background."),
+                };
+                serve.Handler = CommandHandler.Create<string, bool>(HandleServe);
+
+                var rootCommand = new RootCommand("Harbour manages your docker environment using a simple json file.")
+                {
+                    apply,
+                    add,
+                    remove,
+                    serve,
+                };
+
+                rootCommand.Invoke(args);
             }
             catch (ArgumentException ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine(GenerateHelp());
-                Environment.Exit(1);
-            }
-
-            try
-            {
-                harbour.Run();
+                Console.WriteLine(ex.StackTrace);
             }
             catch (Exception ex)
             {
@@ -40,72 +67,59 @@ namespace Harbour
             Environment.Exit(0);
         }
 
-        static Models.Harbour Parse(string[] args)
+        static void HandleApply(string path)
         {
-            if (args.Length > 2 && args.Length < 1)
-            {
-                throw new ArgumentOutOfRangeException("Harbour takes 2 arguments: ");
-            }
+            if (!string.IsNullOrEmpty(path))
+                path = ValidatePath(path);
 
-            Cmd exec;
-            string cmd = args[0].ToLower();
-            string arg = string.Empty;
-
-            if (args.Length == 2)
-                arg = args[1].ToLower();
-
-
-            switch (cmd)
-            {
-                case "apply":
-                    // File path
-                    exec = Cmd.Apply;
-                    if (!string.IsNullOrEmpty(arg))
-                        arg = ValidatePath(arg);
-                    break;
-                case "add":
-                    // File path
-                    exec = Cmd.Add;
-                    arg = ValidatePath(arg);
-                    break;
-                case "remove":
-                    // Service name
-                    exec = Cmd.Remove;
-                    break;
-                case "serve":
-                    // File path or stop
-                    exec = Cmd.Serve;
-                    if (arg.ToLower() == "stop")
-                    {
-                        arg = arg.ToLower();
-                    }
-                    else
-                    {
-                        if (!string.IsNullOrEmpty(arg))
-                            arg = ValidatePath(arg);
-                    }
-
-                    break;
-                default:
-                    throw new ArgumentException($"Invalid argument supplied: {cmd}");
-            }
-
-            return new Models.Harbour(exec, arg);
+            _harbour = new Models.Harbour();
+            _harbour.Apply(path);
         }
 
-        static string GenerateHelp()
+        static void HandleAdd(string path)
         {
-            string help = @"Usage:
-harbour [cmd] [string: argument]
+            if (string.IsNullOrEmpty(path))
+            {
+                throw new ArgumentException("Path is a required argument for add");
+            }
 
-Examples:
-harbour apply [optional: /path/to/state.json]
-harbour add [/path/to/newService.json]
-harbour remove [container-name]
-harbour serve [optional: /path/to/state/json]
-harbour serve stop";
+            path = ValidatePath(path);
+            _harbour = new Models.Harbour();
+            _harbour.Add(path);
+        }
 
-            return help;
+        static void HandleRemove(string serviceName)
+        {
+            if (string.IsNullOrEmpty(serviceName))
+            {
+                throw new ArgumentException("Service name is a required argument for remove");
+            }
+
+            _harbour = new Models.Harbour();
+            _harbour.Remove(serviceName);
+        }
+
+        static void HandleServe(string path, bool detached)
+        {
+            if (!string.IsNullOrEmpty(path))
+                path = ValidatePath(path);
+
+            _harbour = new Models.Harbour();
+
+            if (detached)
+            {
+                _harbour.ServeBackground(path);
+            }
+            else
+            {
+                _harbour.Serve(path);
+            }
+        }
+
+        static void StopServe()
+        {
+            _harbour = new Models.Harbour();
+            _harbour.StopServe();
         }
 
         static string ValidatePath(string path)
