@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Reflection;
-using System.Text;
 using System.Threading.Tasks;
 using Harbour.Models;
 using Microsoft.AspNetCore;
@@ -12,8 +11,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Primitives;
-using Newtonsoft.Json;
 
 namespace Harbour.Services
 {
@@ -43,6 +40,9 @@ namespace Harbour.Services
             }
         }
 
+        /// <summary>
+        /// Run reverse proxy server as executable in background process.
+        /// </summary>
         public void StartServerBackground()
         {
             if (Services == null)
@@ -60,6 +60,9 @@ namespace Harbour.Services
             Process.Start(startInfo);
         }
 
+        /// <summary>
+        /// Start reverse proxy server in current process.
+        /// </summary>
         public void StartServer()
         {
             if (Services == null)
@@ -84,13 +87,13 @@ namespace Harbour.Services
             .Run();
         }
 
+        // Find reverse proxy server process and kill it.
         public void Stop()
         {
             Process[] processes = Process.GetProcessesByName("harbour");
 
             for (int i = 0; i < processes.Length; i++)
             {
-                Console.WriteLine(processes[i].ProcessName);
                 Console.WriteLine(processes[i].Id);
                 processes[i].Kill();
             }
@@ -159,9 +162,6 @@ namespace Harbour.Services
 
         void SetProxyContentAndHeaders(HttpContext http, HttpRequestMessage proxyRequest)
         {
-            // Make sure buffering is enabled
-            // http.Request.EnableBuffering();
-
             // Add request body
             proxyRequest.Content = new StreamContent(http.Request.Body);
 
@@ -177,8 +177,6 @@ namespace Harbour.Services
                     proxyRequest.Headers.Add(header.Key, header.Value.ToArray());
                 }
             }
-
-            // http.Request.Body.Position = 0; // Reset stream just in case
         }
 
         void SetResponseHeaders(HttpContext http, HttpResponseMessage responseMessage)

@@ -41,3 +41,6 @@ harbour --help
 ### Behaviour
 
 Harbour updates the current-state.json each time changes are made. If a service is added or removed, these changes are visible in the ```current-state.json```. This means that users can edit the current-state.json file if small changes need to be made. Be careful, if harbour is unable to read it's ```current-state.json```, it will be unable to run. This is why you can supply a new ```state.json``` to test the configuration file, before any changes are made.
+
+### Built-in proxy server
+Harbour conains a built-in proxy server. It tries to bind to port 80 and can be activated by running ```sudo harbour serve```. The server proxies all incoming HTTP traffic to the corresponding containers as specified in the ```current-state.json```. Harbour user the Kestrel web server and an asynchronous HTTP client to proxy incoming trafic to the containers. The server can also be started in the background with ```sudo harbour serve -d```. This will spawn a new process and run the server until ```sudo harbour serve stop``` is called.

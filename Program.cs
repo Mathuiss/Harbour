@@ -56,12 +56,10 @@ namespace Harbour
             catch (ArgumentException ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message);
-                Console.WriteLine(ex.StackTrace);
             }
 
             Environment.Exit(0);
@@ -105,6 +103,7 @@ namespace Harbour
                 path = ValidatePath(path);
 
             _harbour = new Models.Harbour();
+            _harbour.Apply(path);
 
             if (detached)
             {
